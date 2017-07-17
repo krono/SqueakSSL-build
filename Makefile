@@ -1,4 +1,4 @@
-#!/usr/bin/make -f 
+#!/usr/bin/make -f
 
 
 # Path to opensmalltalk-vm checkout
@@ -50,6 +50,10 @@ ifneq (,$(findstring itimerheartbeat,$(BUILD_KIND)))
   CONFIG_CF+=-DITIMER_HEARTBEAT=1
 endif
 
+ifneq (,$(findstring pharo.,$(BUILD_KIND)))
+  CONFIG_CF+=-DPharoVM -DIMMUTABILITY=1
+endif
+
 ifneq (,$(findstring multithreaded,$(BUILD_KIND)))
   CONFIG_CF+=-DCOGMTVM=1
 else
@@ -64,6 +68,13 @@ ifneq (,$(findstring squeak.sista,$(BUILD_KIND)))
 endif
 endif
 
+ifneq (,$(findstring nsac,$(BUILD_KIND)))
+  CONFIG_CF+=-fwrapv -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer
+endif
+ifneq (,$(findstring newspeak,$(BUILD_KIND)))
+  CONFIG_CF+=-fwrapv -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer
+endif
+
 
 ifneq (,$(findstring immutability,$(BUILD_FLAVOR)))
   CONFIG_CF+=-DIMMUTABILITY=1
@@ -71,37 +82,37 @@ endif
 ifneq (,$(findstring nsnac,$(BUILD_FLAVOR)))
   CONFIG_CF+=-DEnforceAccessControl=0
 endif
+ifneq (,$(findstring debug,$(BUILD_FLAVOR)))
+  CONFIG_CF+=-g3 -O0 -DDEBUGVM=1
+else
+  CONFIG_CF+=-DDEBUGVM=0
+ifneq (,$(findstring assert,$(BUILD_FLAVOR)))
+  CONFIG_CF+=-g -O1
+else
+  CONFIG_CF+=-g -O2 -DNDEBUG
+endif
+endif
 
 ifneq (,$(findstring x86,$(BUILD_ARCH)))
-  CONFIG_CC+=-m32
+  TARGET_ARCH=-m32
 endif
 ifneq (,$(findstring x64,$(BUILD_ARCH)))
-  CONFIG_CC+=-m64
+  TARGET_ARCH=-m64
 endif
 ifneq (,$(findstring ARMv6,$(BUILD_ARCH)))
-  CONFIG_CC+=-march=armv6 -mfpu=vfp -mfloat-abi=hard
+  TARGET_ARCH=-march=armv6 -mfpu=vfp -mfloat-abi=hard
 endif
+
+CONFIG_CC+=$(TARGET_ARCH)
 
 #----------------------------------------------------------------#
 TARGETS=SqueakSSL SqueakSSL.so so.SqueakSSL
 OBJS=SqueakSSL.o sqUnixOpenSSL.o
 
-TARGET_ARCH=-m32
+TARGET_ARCH?=-m32
 
-CFLAGS+= $(CONFIG_CF) \
- -g \
- -O2 \
- -fPIC \
- -DPIC \
- -DNDEBUG \
- -DDEBUGVM=0 \
- -DLSB_FIRST=1 \
- -DHAVE_CONFIG_H \
-#
-
-LDFLAGS+=\
- -Wl,-z,now \
- -Wl,-soname -Wl,SqueakSSL  \
+CFLAGS+= $(CONFIG_CF) -fPIC -DPIC -DLSB_FIRST=1 -DHAVE_CONFIG_H
+LDFLAGS+=-Wl,-z,now  -Wl,-soname -Wl,SqueakSSL
 #
 LDLIBS+=\
  -Wl,--no-as-needed \
@@ -121,7 +132,7 @@ ifdef SSL_DIR
   CFLAGS+=-I$(SSL_INC)
 
   LDFLAGS+=-L$(SSL_LIB)
-endif 
+endif
 
 
 
